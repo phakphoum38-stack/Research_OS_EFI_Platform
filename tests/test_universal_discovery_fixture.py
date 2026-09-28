@@ -56,6 +56,14 @@ class UniversalDiscoveryFixtureTests(unittest.TestCase):
         self.assertTrue(result.snapshot.source_pinned)
         self.assertEqual(result.evidence.kind, "hardware-discovery")
 
+    def test_source_pin_rejects_non_sha1_commit_value(self):
+        with self.assertRaises(ValueError):
+            discover_product(
+                FixtureProvider(),
+                source_sha="not-a-git-sha",
+                source_pinned=True,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
