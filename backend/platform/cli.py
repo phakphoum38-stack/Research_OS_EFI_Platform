@@ -17,6 +17,7 @@ from .research_case import ResearchCase
 from .orchestrator import build_plan
 from .opencore import validate_opencore
 from .pipeline import build_evidence_packet, write_evidence_packet
+from .runtime_evidence import RuntimeObservation, create_runtime_evidence, write_runtime_evidence
 
 
 def main():
@@ -41,6 +42,15 @@ def main():
     x = s.add_parser("runtime")
     x.add_argument("event")
     x.add_argument("output")
+    x.add_argument("--artifact", action="append", default=[])
+    x = s.add_parser("runtime-evidence")
+    x.add_argument("output")
+    x.add_argument("--case-id", required=True)
+    x.add_argument("--source-sha", required=True)
+    x.add_argument("--candidate-sha", required=True)
+    x.add_argument("--result", choices=["PASSED", "FAILED", "INCONCLUSIVE", "ABORTED"], required=True)
+    x.add_argument("--platform", required=True)
+    x.add_argument("--observation", action="append", default=[])
     x.add_argument("--artifact", action="append", default=[])
     x = s.add_parser("profiles")
     x.add_argument("--directory", default="hardware")
@@ -84,6 +94,11 @@ def main():
         print(json.dumps(result, indent=2))
     elif a.command == "runtime":
         write_runtime_event(a.event, a.output, a.artifact)
+    elif a.command == "runtime-evidence":
+        observations = [RuntimeObservation("other", value) for value in a.observation]
+        evidence = create_runtime_evidence(a.case_id, a.source_sha, a.candidate_sha, a.result, a.platform, observations, a.artifact)
+        write_runtime_evidence(evidence, a.output)
+        print(json.dumps(evidence.to_dict(), indent=2, ensure_ascii=False))
     elif a.command == "profiles":
         print(json.dumps(discover_profiles(a.directory), indent=2))
     elif a.command == "bridge":
