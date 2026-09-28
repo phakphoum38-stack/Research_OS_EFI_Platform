@@ -1,46 +1,55 @@
-# Hackintosh AI Platform
+# Research OS EFI Platform
 
-Evidence-driven platform for researching Hackintosh compatibility and generating EFI candidates on Windows.
+Evidence-driven platform for researching real machines, EFI, and OS-specific capabilities.
 
-## Current target
+**Project boundary:** Research OS EFI Platform is a standalone project. The separate Research OS project is not a runtime dependency, shared database, shared evidence store, or combined codebase. Architectural patterns may be referenced with provenance only.
 
-The first tracked hardware profile is **ASUS Vivobook X1504VA / Intel Core i3-1315U**.
+The repository contains a universal Python research foundation while keeping Windows, Linux, and macOS as separate execution systems. The universal layer discovers product/hardware identity, normalizes device identifiers, tracks platform-scoped capabilities, catalogs known products, and provides read-only runtime adapters. It does not merge OS implementations.
 
-The repository now uses a conservative compatibility gate:
+## Current tracked machine
 
-- hardware identity is recorded separately from macOS support
-- unsupported or unresolved devices are not converted into guessed kexts
-- EFI generation is blocked while critical GPU/storage evidence is unresolved
-- generated plist data uses real XML plist serialization
-- CI publishes an inspectable compatibility report
+The first tracked hardware profile is ASUS Vivobook X1504VA / Intel Core i3-1315U.
 
-Current X1504VA blockers:
+The macOS domain remains conservative:
 
-- Intel UHD `8086:A7A9` acceleration is not proven
-- Intel VMD `8086:09AB` / `8086:A77F` storage path is not proven
+- Intel UHD 8086:A7A9 acceleration is not proven
+- Intel VMD 8086:09AB / 8086:A77F storage path is not proven
+- MT7902 Wi-Fi 14C3:7902 is not proven for macOS
 
-MT7902 Wi-Fi (`14C3:7902`) is also currently treated as unproven for macOS.
+## Universal Python + Runtime
 
-See `docs/x1504va-compatibility.md` and `hardware/x1504va.json`.
+The universal foundation is organized as:
 
-## Important boundary
+    Product Discovery
+        -> Product Identity
+        -> Hardware Snapshot
+        -> Platform-specific Runtime
+        -> Evidence
+        -> Platform-scoped Capability
+        -> EFI Research
 
-A compatibility report or generated plist candidate is **not** proof of a bootable Hackintosh. Real hardware boot evidence is tracked separately.
+Windows, Linux, and macOS each own their discovery/runtime implementation. Compatibility decisions remain inside the corresponding OS domain.
+
+The local runtime accepts only fixed, OS-owned operations. It has no arbitrary shell execution interface and refuses local execution against another host OS. Firmware, EFI/ESP, BIOS, Secure Boot, VMD, bootloader, and disk mutation are outside this runtime.
+
+## Flutter boundary
+
+Flutter remains the Control Center. Python exposes JSON contracts that the UI can consume; UI architecture is defined from the product workflow, not generated from tests. Flutter tests validate implemented behavior after the UI is designed.
+
+## Project separation
+
+- Research OS EFI Platform owns its own Python core, runtime, data, evidence, product catalog, and external adapters.
+- Research OS remains a separate project.
+- No Research OS module is imported as a runtime dependency.
+- No Research OS database, runtime service, or external adapter is shared.
+- Windows, Linux, and macOS remain separate platform domains inside this project.
 
 ## Run
 
     python -m unittest discover -s tests -v
+    python -m backend.platform.cli platforms
+    python -m backend.platform.cli discover-product discovery.json
+    python -m backend.platform.cli runtime-operations
+    python -m backend.platform.cli runtime-session runtime-session.json --case-id CASE --hardware-identity-sha SHA --operation os.version
 
-The repository's GitHub Actions workflow runs the same compatibility gate on pull requests and pushes to `main`.
-
-## Platform architecture
-
-The long-term design adds a Python evidence core and a Flutter Control Center. The core records evidence levels, fingerprints source artifacts, and extracts a lightweight ACPI topology without treating parsing as proof of macOS support. The Flutter app is a read-only control surface in this first milestone; firmware and Windows EFI changes remain explicit and gated.
-
-### Local core commands
-
-    python -m unittest discover -s tests -v
-    python -m backend.platform.cli acpi path/to/dsdt.dsl
-    python -m backend.platform.cli manifest hardware/x1504va.json evidence-manifest.json
-
-See docs/platform-architecture.md for the safety boundaries and state model.
+See docs/universal-python-runtime.md for the layer-by-layer architecture.

@@ -19,6 +19,12 @@ from .opencore import validate_opencore
 from .pipeline import build_evidence_packet, write_evidence_packet
 from .runtime_evidence import RuntimeObservation, create_runtime_evidence, write_runtime_evidence
 from .runtime_learning import learn_from_runtime_evidence
+from .universal.discovery import discover_product
+from .universal.discovery.evidence import write_discovery_result
+from .universal.discovery.runner import provider_for
+from .universal.platforms import host_platform, normalize_platform, platform_report
+from .universal.runtime.engine import RuntimeEngine
+from .universal.runtime.evidence import write_session_evidence
 
 
 def main():
@@ -27,6 +33,26 @@ def main():
 
     x = s.add_parser("collect")
     x.add_argument("output")
+    x = s.add_parser("discover-product")
+    x.add_argument("output")
+    x.add_argument("--platform", default=None, choices=["windows", "linux", "macos"])
+    x.add_argument("--source-sha", default="local-development")
+    x.add_argument("--source-pinned", action="store_true")
+    x = s.add_parser("platforms")
+    x = s.add_parser("runtime-operations")
+    x.add_argument("--platform", default=None, choices=["windows", "linux", "macos"])
+    x = s.add_parser("runtime-exec")
+    x.add_argument("--platform", default=None, choices=["windows", "linux", "macos"])
+    x.add_argument("--operation", required=True)
+    x.add_argument("--keep-going", action="store_true")
+    x = s.add_parser("runtime-session")
+    x.add_argument("output")
+    x.add_argument("--platform", default=None, choices=["windows", "linux", "macos"])
+    x.add_argument("--operation", action="append", required=True)
+    x.add_argument("--case-id", required=True)
+    x.add_argument("--hardware-identity-sha", required=True)
+    x.add_argument("--source-sha", default="local-development")
+    x.add_argument("--keep-going", action="store_true")
     x = s.add_parser("acpi")
     x.add_argument("dsl")
     x.add_argument("--name", action="append", default=[])
@@ -77,6 +103,53 @@ def main():
 
     if a.command == "collect":
         write_snapshot(a.output)
+    elif a.command == "discover-product":
+        target = normalize_platform(a.platform or host_platform())
+        result = discover_product(
+            provider_for(target),
+            source_sha=a.source_sha,
+            source_pinned=a.source_pinned,
+        )
+        write_discovery_result(result, a.output)
+        print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+    elif a.command == "platforms":
+        print(json.dumps(platform_report(), indent=2, ensure_ascii=False))
+    elif a.command == "runtime-operations":
+        target = normalize_platform(a.platform or host_platform())
+        print(
+            json.dumps(
+                {
+                    "platform": target.value,
+                    "operations": RuntimeEngine().manager.operations(target),
+                },
+                indent=2,
+            )
+        )
+    elif a.command == "runtime-exec":
+        target = normalize_platform(a.platform or host_platform())
+        session = RuntimeEngine().run(
+            target.value,
+            [a.operation],
+            fail_closed=not a.keep_going,
+        )
+        print(json.dumps(session.to_dict(), indent=2, ensure_ascii=False))
+        return 0 if all(item.returncode == 0 for item in session.results) else 1
+    elif a.command == "runtime-session":
+        target = normalize_platform(a.platform or host_platform())
+        session = RuntimeEngine().run(
+            target.value,
+            a.operation,
+            fail_closed=not a.keep_going,
+        )
+        write_session_evidence(
+            session,
+            a.output,
+            source_sha=a.source_sha,
+            case_id=a.case_id,
+            hardware_identity_sha=a.hardware_identity_sha,
+        )
+        print(json.dumps(session.to_dict(), indent=2, ensure_ascii=False))
+        return 0 if all(item.returncode == 0 for item in session.results) else 1
     elif a.command == "acpi":
         lines = Path(a.dsl).read_text(encoding="utf-8", errors="replace").splitlines()
         print(json.dumps(
