@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import Protocol
 
-from ...contracts import EvidenceEnvelope
+from ...contracts import EvidenceEnvelope, verify_envelope
 from ..identity import hardware_identity_sha, product_identity_sha
 from ..models import HardwareSnapshot
 from ..normalize import normalize_snapshot
@@ -75,9 +75,15 @@ def discover_product(
             "hardware_identity_sha": hardware_sha,
         },
         {
+            "evidence_schema": "discovery-v2",
+            "platform": snapshot.platform,
+            "collector": snapshot.collector,
             "provider": provider.name,
             "provider_version": provider.version,
             "source_pinned": source_pinned,
+            "read_only": bool(snapshot.metadata.get("read_only")),
         },
     )
+    if not verify_envelope(evidence.to_dict()):
+        raise RuntimeError("hardware discovery produced unverifiable evidence envelope")
     return DiscoveryResult(snapshot, product_sha, hardware_sha, evidence)
