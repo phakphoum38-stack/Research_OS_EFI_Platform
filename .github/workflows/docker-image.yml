@@ -28,7 +28,7 @@ jobs:
     - name: Set image tags
       id: meta
       run: |
-        echo "IMAGE=ghcr.io/${{ github.repository }}/ai-saas" >> "$GITHUB_OUTPUT"
+        REPOSITORY="$(printf '%s' "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"\n        echo "IMAGE=ghcr.io/${REPOSITORY}/ai-saas" >> "$GITHUB_OUTPUT"
         echo "VERSION=$(date +%s)" >> "$GITHUB_OUTPUT"
 
     - name: Build Docker image
