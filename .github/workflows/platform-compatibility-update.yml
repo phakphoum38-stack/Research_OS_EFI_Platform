@@ -1,0 +1,50 @@
+name: Platform Compatibility Update Proposal
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  compatibility-update-proposal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Proposal smoke test
+        run: |
+          python - <<'PY'
+          from backend.platform.compatibility_learning import CompatibilityDecision
+          from backend.platform.compatibility_update import build_proposal, verify_proposal
+          from backend.platform.evidence import EvidenceLevel
+
+          decision = CompatibilityDecision(
+              component="gpu",
+              value="8086:A7A9",
+              level=EvidenceLevel.MACOS_PROVEN,
+              evidence_id="synthetic-evidence",
+              case_id="x1504va-compatibility",
+              source_sha="0" * 40,
+              candidate_sha="candidate-fixture",
+              reason="explicit controlled runtime promotion rule",
+          )
+          proposal = build_proposal(
+              decision,
+              current_value="8086:A7A9",
+              current_level="research",
+          )
+          assert proposal.proposed_level == "macos_proven"
+          assert proposal.evidence_id == "synthetic-evidence"
+          assert verify_proposal(proposal)
+          print(proposal.to_dict())
+          PY
+      - name: Assert no hardware/profile mutation
+        run: |
+          git diff --exit-code -- hardware || true
+          test ! -e .ci-compatibility-update/applied
