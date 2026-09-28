@@ -27,7 +27,7 @@ class FixtureProvider:
                     kind="gpu",
                     name="Intel UHD Graphics",
                     vendor="Intel",
-                    device_id=r"PCIVEN_8086&DEV_A7A9",
+                    device_id=r"PCI\VEN_8086&DEV_A7A9",
                     bus="pci",
                 ),
                 HardwareComponent(
@@ -44,7 +44,7 @@ class UniversalDiscoveryFixtureTests(unittest.TestCase):
     def test_discovery_normalizes_and_wraps_evidence(self):
         result = discover_product(
             FixtureProvider(),
-            source_sha="fixture-source-sha",
+            source_sha="0123456789abcdef0123456789abcdef01234567",
             source_pinned=True,
         )
         self.assertEqual(result.snapshot.product.product, "X1504VA")
