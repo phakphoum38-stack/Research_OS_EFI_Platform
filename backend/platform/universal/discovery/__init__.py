@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from ..contracts import EvidenceEnvelope
+from ...contracts import EvidenceEnvelope
 from ..identity import hardware_identity_sha, product_identity_sha
 from ..models import HardwareSnapshot
 from ..normalize import normalize_snapshot
@@ -58,8 +58,9 @@ def discover_product(
     )
     product_sha = product_identity_sha(snapshot.product)
     hardware_sha = hardware_identity_sha(snapshot)
+    effective_source = source_sha or "UNPINNED_SOURCE"
     evidence = EvidenceEnvelope.create(
-        source_sha or "UNPINNED_SOURCE",
+        effective_source,
         "hardware-discovery",
         "OBSERVED",
         {
