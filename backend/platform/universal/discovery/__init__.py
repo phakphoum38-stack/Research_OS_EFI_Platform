@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -7,6 +8,9 @@ from ...contracts import EvidenceEnvelope
 from ..identity import hardware_identity_sha, product_identity_sha
 from ..models import HardwareSnapshot
 from ..normalize import normalize_snapshot
+
+
+_SHA256_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 class DiscoveryProvider(Protocol):
@@ -40,6 +44,8 @@ def discover_product(
     source_sha: str = "",
     source_pinned: bool = False,
 ) -> DiscoveryResult:
+    if source_pinned and not _SHA256_RE.fullmatch(source_sha):
+        raise ValueError("source_pinned discovery requires a 40-character SHA-1 commit identifier")
     snapshot = normalize_snapshot(provider.discover())
     if snapshot.platform != provider.platform:
         raise ValueError(
