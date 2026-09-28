@@ -12,6 +12,7 @@ from .research_bridge import capability_report
 from .efi_knowledge import knowledge_report
 from .research_case import ResearchCase
 from .orchestrator import build_plan
+from .opencore import validate_opencore
 def main():
  p=argparse.ArgumentParser(prog="hackintosh-platform"); s=p.add_subparsers(dest="command",required=True)
  x=s.add_parser("collect"); x.add_argument("output")
@@ -22,6 +23,7 @@ def main():
  x=s.add_parser("runtime"); x.add_argument("event"); x.add_argument("output"); x.add_argument("--artifact",action="append",default=[])
  x=s.add_parser("profiles"); x.add_argument("--directory",default="hardware")
  s.add_parser("bridge"); s.add_parser("efi-knowledge")
+ x=s.add_parser("validate-opencore"); x.add_argument("efi")
  x=s.add_parser("plan"); x.add_argument("profile"); x.add_argument("--source-sha",required=True); x.add_argument("--case-id",default="x1504va-research")
  a=p.parse_args()
  if a.command=="collect": write_snapshot(a.output)
@@ -35,6 +37,7 @@ def main():
  elif a.command=="profiles": print(json.dumps(discover_profiles(a.directory),indent=2))
  elif a.command=="bridge": print(json.dumps(capability_report(),indent=2))
  elif a.command=="efi-knowledge": print(json.dumps(knowledge_report(),indent=2))
+ elif a.command=="validate-opencore": print(json.dumps(validate_opencore(a.efi),indent=2))
  elif a.command=="plan":
   profile=json.loads(Path(a.profile).read_text(encoding="utf-8"))
   case=ResearchCase.from_profile(a.case_id,a.source_sha,"X1504VA","controlled evidence-first EFI research",profile,capability_report()["capabilities"])
