@@ -2,7 +2,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from backend.platform.pipeline import build_evidence_packet, fingerprint_tree, write_evidence_packet
+from backend.platform.contracts import digest
+from backend.platform.pipeline import (
+    build_evidence_packet,
+    fingerprint_tree,
+    write_evidence_packet,
+)
 
 
 class EvidencePipelineTests(unittest.TestCase):
@@ -18,12 +23,17 @@ class EvidencePipelineTests(unittest.TestCase):
             },
         }
         with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "EFI"
             packet = build_evidence_packet(
                 profile,
-                str(Path(tmp) / "EFI"),
+                str(root),
                 "a" * 40,
                 "determine whether the X1504VA candidate can reach controlled boot",
             )
+            packet_path = root / "evidence-packet.json"
+            write_evidence_packet(packet, str(packet_path))
+            self.assertEqual(packet["candidate_sha"], fingerprint_tree(str(root)))
+
         self.assertEqual(packet["status"], "BLOCKED")
         self.assertEqual(packet["candidate"]["status"], "EFI_BLOCKED")
         self.assertEqual(packet["opencore_validation"]["status"], "PASS")
@@ -32,7 +42,7 @@ class EvidencePipelineTests(unittest.TestCase):
         self.assertTrue(packet["candidate_sha"])
         self.assertEqual(
             packet["evidence_envelope"]["evidence_id"],
-            __import__("backend.platform.contracts", fromlist=["digest"]).digest(
+            digest(
                 {
                     "source_sha": packet["evidence_envelope"]["source_sha"],
                     "kind": packet["evidence_envelope"]["kind"],
