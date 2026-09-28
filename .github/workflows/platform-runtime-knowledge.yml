@@ -1,0 +1,43 @@
+name: Platform Runtime Knowledge
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  runtime-knowledge-loop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Runtime evidence to knowledge smoke
+        run: |
+          rm -rf .ci-runtime-knowledge
+          mkdir -p .ci-runtime-knowledge
+          printf 'runtime knowledge fixture\n' > .ci-runtime-knowledge/runtime.txt
+          python -m backend.platform.cli runtime-evidence             .ci-runtime-knowledge/runtime-evidence.json             --case-id x1504va-runtime-knowledge             --source-sha 0000000000000000000000000000000000000000             --candidate-sha candidate-fixture             --result INCONCLUSIVE             --platform macOS             --observation "Controlled runtime observation fixture"             --artifact .ci-runtime-knowledge/runtime.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from backend.platform.research_case import ResearchCase
+          from backend.platform.runtime_learning import learn_from_runtime_evidence
+
+          case = ResearchCase(
+              "x1504va-runtime-knowledge",
+              "0000000000000000000000000000000000000000",
+              "X1504VA",
+              "controlled runtime knowledge smoke",
+          )
+          updated, knowledge = learn_from_runtime_evidence(
+              case, ".ci-runtime-knowledge/runtime-evidence.json"
+          )
+          assert len(knowledge.for_case(case.case_id)) == 1
+          assert updated.provenance[0]["kind"] == "runtime-evidence"
+          assert updated.provenance[0]["evidence_id"]
+          print(json.dumps(knowledge.to_dict(), indent=2))
+          PY
