@@ -1,0 +1,41 @@
+name: Platform Machine Evidence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  machine-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Machine evidence tests
+        run: python -m unittest tests/test_machine_evidence.py -v
+      - name: Full Python suite
+        run: python -m unittest discover -s tests -v
+      - name: Physical evidence boundary smoke
+        run: |
+          python - <<'PY'
+          from backend.platform.research.machine_evidence import record_machine_evidence
+          from backend.platform.universal.models import HardwareSnapshot, ProductIdentity
+          record = record_machine_evidence(
+              HardwareSnapshot(platform="linux", product=ProductIdentity(product="ci-fixture")),
+              case_id="case-ci",
+              evidence_id="evidence-ci",
+              runtime_result="INCONCLUSIVE",
+              physical_machine=False,
+          )
+          assert record.hardware_identity_sha
+          assert record.physical_machine is False
+          print(record)
+          PY
+      - name: Safety boundary
+        shell: bash
+        run: |
+          if grep -RniE 'format-volume|Clear-Disk|Set-Partition|bcdedit[[:space:]]+/delete|Disable-SecureBoot|Set-SecureBootUEFI|diskpart.*clean|efibootmgr[[:space:]].*(create|delete)' backend/platform 2>/dev/null; then
+            echo "Unsafe mutation command detected"; exit 1
+          fi
