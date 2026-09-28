@@ -1,0 +1,32 @@
+name: Platform Research Foundation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  research-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Research foundation tests
+        run: python -m unittest tests/test_research_foundation.py -v
+      - name: Deterministic identity smoke
+        run: |
+          python - <<'PY'
+          from backend.platform.research import ResearchGap
+          a = ResearchGap("8086:A7A9", "Can macOS accelerate this GPU?", "acceleration is unknown", ("runtime",))
+          b = ResearchGap("8086:A7A9", "Can macOS accelerate this GPU?", "acceleration is unknown", ("runtime",))
+          assert a.gap_id == b.gap_id
+          print(a.to_dict())
+          PY
+      - name: Safety boundary
+        shell: bash
+        run: |
+          if grep -RniE 'format-volume|Clear-Disk|Set-Partition|bcdedit[[:space:]]+/delete|Disable-SecureBoot|Set-SecureBootUEFI|diskpart.*clean|efibootmgr[[:space:]].*(create|delete)' backend/platform/research 2>/dev/null; then
+            echo "Unsafe mutation command detected in research foundation"; exit 1
+          fi
