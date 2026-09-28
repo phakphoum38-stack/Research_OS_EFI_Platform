@@ -23,6 +23,7 @@ class FixtureProvider:
                 bios_version="313",
                 cpu_model="Intel Core i3-1315U",
             ),
+            metadata={"read_only": True},
             components=(
                 HardwareComponent(
                     kind="gpu",
