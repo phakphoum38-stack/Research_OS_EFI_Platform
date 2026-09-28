@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol
 from urllib.parse import urlparse
 
+from ..observations import ResearchObservation
 from ..sources import ResearchSource
 
 
