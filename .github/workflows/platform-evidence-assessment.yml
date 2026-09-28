@@ -1,0 +1,25 @@
+name: Platform Evidence Assessment
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  evidence-assessment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Evidence assessment tests
+        run: python -m unittest tests.test_evidence_assessment -v
+      - name: Full Python suite
+        run: python -m unittest discover -s tests -v
+      - name: Safety boundary
+        shell: bash
+        run: |
+          if grep -RniE 'format-volume|Clear-Disk|Set-Partition|bcdedit[[:space:]]+/delete|Disable-SecureBoot|Set-SecureBootUEFI|diskpart.*clean|efibootmgr[[:space:]].*(create|delete)' backend/platform/research 2>/dev/null; then
+            echo "Unsafe mutation command detected in evidence layer"; exit 1
+          fi
