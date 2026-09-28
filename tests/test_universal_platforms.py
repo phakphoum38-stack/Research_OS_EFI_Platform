@@ -6,16 +6,22 @@ from backend.platform.universal.capabilities import (
     CapabilityObservation,
     CapabilityState,
 )
-from backend.platform.universal.platforms import PlatformId, host_platform, platform_report
+from backend.platform.universal.platforms import (
+    PlatformId,
+    host_platform,
+    platform_report,
+)
 
 
 class UniversalPlatformTests(unittest.TestCase):
     def test_registry_contains_independent_os_domains(self):
         report = platform_report()
-        ids = {item["platform_id"] for item in report["platforms"]}
-        self.assertIn("windows", ids)
-        self.assertIn("linux", ids)
-        self.assertIn("macos", ids)
+        by_id = {item["platform_id"]: item for item in report["platforms"]}
+        self.assertIn("windows", by_id)
+        self.assertIn("linux", by_id)
+        self.assertIn("macos", by_id)
+        self.assertEqual(by_id["freebsd"]["implementation_status"], "registry-only")
+        self.assertEqual(by_id["macos"]["implementation_status"], "implemented")
 
     def test_capability_observation_keeps_platform_boundary(self):
         matrix = CapabilityMatrix()
