@@ -2,7 +2,7 @@ import unittest
 
 from backend.platform.universal.discovery import discover_product
 from backend.platform.contracts import verify_envelope
-from backend.platform.universal.identity import hardware_identity_sha
+from backend.platform.universal.identity import discovery_snapshot_sha, hardware_identity_sha
 from backend.platform.universal.models import HardwareComponent, HardwareSnapshot, ProductIdentity
 
 
@@ -57,11 +57,25 @@ class UniversalDiscoveryFixtureTests(unittest.TestCase):
         self.assertTrue(result.evidence.evidence_id)
         self.assertTrue(result.snapshot.source_pinned)
         self.assertEqual(result.evidence.kind, "hardware-discovery")
-        self.assertEqual(result.evidence.provenance["evidence_schema"], "discovery-v2")
+        self.assertEqual(result.evidence.provenance["evidence_schema"], "discovery-v3")
+        self.assertEqual(result.discovery_snapshot_sha, discovery_snapshot_sha(result.snapshot))
+        self.assertEqual(result.evidence.payload["discovery_snapshot_sha"], result.discovery_snapshot_sha)
+        self.assertFalse(result.evidence.provenance["physical_machine"])
         self.assertEqual(result.evidence.provenance["platform"], "windows")
         self.assertEqual(result.evidence.provenance["collector"], "fixture-provider@1.0")
         self.assertTrue(result.evidence.provenance["read_only"])
         self.assertTrue(verify_envelope(result.evidence.to_dict()))
+
+    def test_snapshot_fingerprint_ignores_discovery_timestamp(self):
+        first = FixtureProvider().discover()
+        second = HardwareSnapshot(
+            platform=first.platform,
+            product=first.product,
+            components=first.components,
+            discovered_at="2030-01-01T00:00:00+00:00",
+            metadata=first.metadata,
+        )
+        self.assertEqual(discovery_snapshot_sha(first), discovery_snapshot_sha(second))
 
     def test_source_pin_rejects_non_sha1_commit_value(self):
         with self.assertRaises(ValueError):
