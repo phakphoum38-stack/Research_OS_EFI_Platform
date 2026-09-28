@@ -4,7 +4,7 @@ from .base import RuntimeAdapter, RuntimeContext, RuntimeSafetyError, RuntimeRes
 from .linux import LinuxRuntime
 from .macos import MacOSRuntime
 from .windows import WindowsRuntime
-from ..platforms import PlatformId, normalize_platform
+from ..platforms import PlatformId, host_platform, normalize_platform
 
 
 _ADAPTERS = {
@@ -19,7 +19,9 @@ class RuntimeManager:
         target = normalize_platform(platform)
         adapter_type = _ADAPTERS.get(target)
         if adapter_type is None:
-            raise RuntimeSafetyError(f"no local runtime adapter registered for {target.value}")
+            raise RuntimeSafetyError(
+                f"no local runtime adapter registered for {target.value}"
+            )
         return adapter_type()
 
     def execute(
@@ -33,6 +35,10 @@ class RuntimeManager:
         runtime_context = context or RuntimeContext(platform=target)
         if runtime_context.platform != target:
             raise RuntimeSafetyError("runtime context platform mismatch")
+        if runtime_context.mode.value == "local" and target != host_platform():
+            raise RuntimeSafetyError(
+                f"local runtime target {target.value} does not match host {host_platform().value}"
+            )
         return self.adapter(target).execute(operation_id, runtime_context)
 
     def operations(self, platform: str | PlatformId) -> list[str]:
