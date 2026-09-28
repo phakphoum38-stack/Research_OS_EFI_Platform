@@ -55,6 +55,32 @@ def hardware_identity_payload(snapshot: HardwareSnapshot) -> dict[str, Any]:
     }
 
 
+def discovery_snapshot_payload(snapshot: HardwareSnapshot) -> dict[str, Any]:
+    """Return the deterministic, observation-only portion of a discovery snapshot."""
+    components = [item.to_dict() for item in snapshot.components]
+    components.sort(
+        key=lambda item: (
+            item["kind"],
+            item["bus"],
+            item["device_id"],
+            item["vendor"],
+            item["model"],
+            item["name"],
+        )
+    )
+    return {
+        "schema_version": snapshot.schema_version,
+        "platform": snapshot.platform,
+        "product": snapshot.product.to_dict(),
+        "components": components,
+    }
+
+
+def discovery_snapshot_sha(snapshot: HardwareSnapshot) -> str:
+    """Fingerprint stable discovery observations, excluding timestamps/provenance."""
+    return _digest(discovery_snapshot_payload(snapshot))
+
+
 def product_identity_sha(identity: ProductIdentity) -> str:
     return _digest(product_identity_payload(identity))
 
