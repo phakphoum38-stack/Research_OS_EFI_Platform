@@ -1,12 +1,10 @@
-# Hackintosh AI Platform
+# Research OS EFI Platform
 
-Evidence-driven platform for researching real machines and their OS-specific capabilities.
+Evidence-driven platform for researching real machines, EFI, and OS-specific capabilities.
 
-The repository now contains a universal Python research foundation while
-keeping Windows, Linux, and macOS as separate execution systems. The universal
-layer discovers product/hardware identity, normalizes device identifiers,
-tracks platform-scoped capabilities, catalogs known products, and provides
-read-only runtime adapters. It does not merge OS implementations.
+**Project boundary:** Research OS EFI Platform is a standalone project. The separate Research OS project is not a runtime dependency, shared database, shared evidence store, or combined codebase. Architectural patterns may be referenced with provenance only.
+
+The repository contains a universal Python research foundation while keeping Windows, Linux, and macOS as separate execution systems. The universal layer discovers product/hardware identity, normalizes device identifiers, tracks platform-scoped capabilities, catalogs known products, and provides read-only runtime adapters. It does not merge OS implementations.
 
 ## Current tracked machine
 
@@ -28,21 +26,23 @@ The universal foundation is organized as:
         -> Platform-specific Runtime
         -> Evidence
         -> Platform-scoped Capability
+        -> EFI Research
 
-Windows, Linux, and macOS each own their discovery/runtime implementation.
-Compatibility decisions remain inside the corresponding OS domain.
+Windows, Linux, and macOS each own their discovery/runtime implementation. Compatibility decisions remain inside the corresponding OS domain.
 
-The local runtime accepts only fixed, OS-owned operations. It has no arbitrary
-shell execution interface and refuses local execution against another host OS.
-Firmware, EFI/ESP, BIOS, Secure Boot, VMD, bootloader, and disk mutation are
-outside this runtime.
+The local runtime accepts only fixed, OS-owned operations. It has no arbitrary shell execution interface and refuses local execution against another host OS. Firmware, EFI/ESP, BIOS, Secure Boot, VMD, bootloader, and disk mutation are outside this runtime.
 
 ## Flutter boundary
 
-Flutter remains the Control Center. Python exposes JSON contracts that the UI
-can consume; UI architecture is defined from the product workflow, not
-generated from tests. Flutter tests validate implemented behavior after the UI
-is designed.
+Flutter remains the Control Center. Python exposes JSON contracts that the UI can consume; UI architecture is defined from the product workflow, not generated from tests. Flutter tests validate implemented behavior after the UI is designed.
+
+## Project separation
+
+- Research OS EFI Platform owns its own Python core, runtime, data, evidence, product catalog, and external adapters.
+- Research OS remains a separate project.
+- No Research OS module is imported as a runtime dependency.
+- No Research OS database, runtime service, or external adapter is shared.
+- Windows, Linux, and macOS remain separate platform domains inside this project.
 
 ## Run
 
