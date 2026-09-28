@@ -18,4 +18,4 @@ class ControlCenterPage extends StatelessWidget{
  const Card(child:ListTile(leading:Icon(Icons.route),title:Text('Research Lifecycle'),subtitle:Text('Collect → Reason → Candidate → Validate → Preflight → Human Experiment → Evidence → Learn'))),
  const Card(child:ListTile(leading:Icon(Icons.lock_outline),title:Text('Authority Boundary'),subtitle:Text('READY_FOR_HUMAN_BOOT is repository-side only. No BIOS / ESP / Secure Boot / VMD / disk mutation.'))),
  ...components.map((x)=>Card(child:ListTile(leading:Icon(x['state']!.contains('RESEARCH')?Icons.science:Icons.verified_outlined),title:Text(x['name']!),subtitle:Text(x['state']!),trailing:const Icon(Icons.chevron_right)))),
- const Card(child:ListTile(leading:Icon(Icons.account_tree),title:Text('Known ACPI topology'),subtitle:Text('PC00 → GFX0 · VMD0 → NVD1 · I2C1 → ETPD'))]))]));}}
+ const Card(child:ListTile(leading:Icon(Icons.account_tree),title:Text('Known ACPI topology'),subtitle:Text('PC00 → GFX0 · VMD0 → NVD1 · I2C1 → ETPD'))])));}}
