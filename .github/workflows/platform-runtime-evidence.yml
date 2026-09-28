@@ -1,0 +1,34 @@
+name: Platform Runtime Evidence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  runtime-evidence-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Runtime evidence CLI smoke
+        run: |
+          rm -rf .ci-runtime-evidence
+          mkdir -p .ci-runtime-evidence
+          printf 'controlled evidence fixture\n' > .ci-runtime-evidence/runtime.txt
+          python -m backend.platform.cli runtime-evidence             .ci-runtime-evidence/runtime-evidence.json             --case-id x1504va-runtime-contract             --source-sha 0000000000000000000000000000000000000000             --candidate-sha candidate-fixture             --result INCONCLUSIVE             --platform macOS             --observation "Runtime evidence contract smoke test"             --artifact .ci-runtime-evidence/runtime.txt
+      - name: Verify envelope
+        run: |
+          python - <<'PY'
+          from backend.platform.runtime_evidence import load_and_verify_runtime_evidence
+          value = load_and_verify_runtime_evidence(".ci-runtime-evidence/runtime-evidence.json")
+          assert value["kind"] == "runtime-evidence"
+          assert value["status"] == "INCONCLUSIVE"
+          assert value["payload"]["human_controlled"] is True
+          assert value["payload"]["hardware_mutation_performed"] is False
+          assert value["payload"]["artifacts"]
+          PY
