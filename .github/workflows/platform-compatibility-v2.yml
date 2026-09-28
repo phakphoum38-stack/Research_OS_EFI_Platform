@@ -1,0 +1,36 @@
+name: Platform Compatibility V2
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  compatibility-v2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compatibility V2 tests
+        run: python -m unittest tests/test_compatibility_v2.py -v
+      - name: Full Python suite
+        run: python -m unittest discover -s tests -v
+      - name: Fail-closed smoke
+        run: |
+          python - <<'PY'
+          from backend.platform.compatibility_v2 import decide_from_machine_evidence
+          from backend.platform.research.evidence import EvidenceAssessment
+          from backend.platform.research.machine_evidence import MachineEvidenceRecord
+          machine = MachineEvidenceRecord("case-ci", "linux", {}, "a"*64, "evidence-ci", False, "PASSED", {"source_id":"ci"})
+          assessment = EvidenceAssessment("gap-ci", "SUPPORTED", ("evidence-ci",), (), (), "fixture")
+          assert decide_from_machine_evidence(subject="fixture", assessment=assessment, machine=machine) is None
+          print("fail-closed")
+          PY
+      - name: Safety boundary
+        shell: bash
+        run: |
+          if grep -RniE 'hardware/.*(write|update)|format-volume|Clear-Disk|Set-Partition|bcdedit[[:space:]]+/delete|Disable-SecureBoot|Set-SecureBootUEFI|diskpart.*clean|efibootmgr[[:space:]].*(create|delete)' backend/platform/compatibility_v2.py 2>/dev/null; then
+            echo "Unsafe compatibility mutation detected"; exit 1
+          fi
