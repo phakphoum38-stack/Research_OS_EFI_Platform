@@ -1,0 +1,43 @@
+name: Platform Evidence Pipeline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  evidence-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Pipeline CLI smoke
+        run: |
+          rm -rf .ci-evidence
+          python -m backend.platform.cli pipeline             hardware/x1504va.json             .ci-evidence             --source-sha 0000000000000000000000000000000000000000             --hypothesis "validate repository-side X1504VA candidate"
+      - name: Verify evidence packet and candidate fingerprint
+        run: |
+          test -f .ci-evidence/evidence-packet.json
+          python - <<'PY'
+          import json
+          from backend.platform.pipeline import fingerprint_tree
+
+          root = ".ci-evidence"
+          with open(f"{root}/evidence-packet.json", encoding="utf-8") as handle:
+              packet = json.load(handle)
+
+          if packet["status"] != "BLOCKED":
+              raise SystemExit(f"expected BLOCKED, got {packet['status']}")
+          if packet["candidate"]["status"] != "EFI_BLOCKED":
+              raise SystemExit("candidate must remain EFI_BLOCKED")
+          if packet["opencore_validation"]["status"] != "PASS":
+              raise SystemExit("OpenCore structural validation must PASS")
+          if packet["safety"]["mutation_performed"]:
+              raise SystemExit("pipeline must never mutate hardware")
+          if fingerprint_tree(root) != packet["candidate_sha"]:
+              raise SystemExit("candidate fingerprint is not stable after packet write")
+          PY
