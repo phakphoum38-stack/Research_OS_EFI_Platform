@@ -1,0 +1,52 @@
+name: Platform Universal Python Runtime
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  python-universal-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Platform registry smoke
+        run: python -m backend.platform.cli platforms
+      - name: Runtime operation registry smoke
+        run: python -m backend.platform.cli runtime-operations --platform linux
+      - name: Universal fixture discovery smoke
+        run: |
+          python - <<'PY'
+          from backend.platform.universal.discovery import discover_product
+          from backend.platform.universal.models import HardwareSnapshot, ProductIdentity
+          class Fixture:
+              platform = "windows"
+              name = "ci-fixture"
+              version = "1.0"
+              def discover(self):
+                  return HardwareSnapshot(
+                      platform="windows",
+                      product=ProductIdentity(
+                          manufacturer="ASUS",
+                          product="X1504VA",
+                          board="X1504VA",
+                          cpu_model="Intel Core i3-1315U",
+                      ),
+                  )
+          result = discover_product(Fixture(), source_sha="ci-fixture", source_pinned=False)
+          assert result.snapshot.product.product == "X1504VA"
+          assert result.hardware_identity_sha
+          assert result.evidence.kind == "hardware-discovery"
+          print(result.to_dict())
+          PY
+      - name: Safety boundary
+        shell: bash
+        run: |
+          if grep -RniE 'format-volume|Clear-Disk|Set-Partition|bcdedit[[:space:]]+/delete|Disable-SecureBoot|Set-SecureBootUEFI|diskpart.*clean|efibootmgr[[:space:]].*(create|delete)' backend/platform/universal 2>/dev/null; then
+            echo "Unsafe mutation command detected in universal runtime"; exit 1
+          fi
