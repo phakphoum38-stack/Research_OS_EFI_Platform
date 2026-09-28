@@ -7,6 +7,7 @@ from .base import (
     RuntimeSafetyError,
 )
 from .engine import RuntimeEngine, RuntimeSession
+from .evidence import envelope_for_session, load_and_verify_session, write_session_evidence
 from .manager import RuntimeManager
 
 __all__ = [
@@ -19,4 +20,7 @@ __all__ = [
     "RuntimeEngine",
     "RuntimeSession",
     "RuntimeManager",
+    "envelope_for_session",
+    "load_and_verify_session",
+    "write_session_evidence",
 ]
