@@ -32,3 +32,15 @@ A compatibility report or generated plist candidate is **not** proof of a bootab
     python -m unittest discover -s tests -v
 
 The repository's GitHub Actions workflow runs the same compatibility gate on pull requests and pushes to `main`.
+
+## Platform architecture
+
+The long-term design adds a Python evidence core and a Flutter Control Center. The core records evidence levels, fingerprints source artifacts, and extracts a lightweight ACPI topology without treating parsing as proof of macOS support. The Flutter app is a read-only control surface in this first milestone; firmware and Windows EFI changes remain explicit and gated.
+
+### Local core commands
+
+    python -m unittest discover -s tests -v
+    python -m backend.platform.cli acpi path/to/dsdt.dsl
+    python -m backend.platform.cli manifest hardware/x1504va.json evidence-manifest.json
+
+See docs/platform-architecture.md for the safety boundaries and state model.
