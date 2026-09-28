@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 
 from backend.platform.contracts import digest
 from backend.platform.universal.models import HardwareSnapshot
@@ -16,13 +16,7 @@ class KnowledgeNode:
     provenance: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "node_id": self.node_id,
-            "kind": self.kind,
-            "identity": self.identity,
-            "attributes": dict(self.attributes),
-            "provenance": dict(self.provenance),
-        }
+        return {"node_id": self.node_id, "kind": self.kind, "identity": self.identity, "attributes": dict(self.attributes), "provenance": dict(self.provenance)}
 
 
 @dataclass(frozen=True)
@@ -32,13 +26,11 @@ class KnowledgeEdge:
     target_id: str
     provenance: Mapping[str, Any] = field(default_factory=dict)
 
+    def __hash__(self) -> int:
+        return hash((self.source_id, self.relation, self.target_id))
+
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "source_id": self.source_id,
-            "relation": self.relation,
-            "target_id": self.target_id,
-            "provenance": dict(self.provenance),
-        }
+        return {"source_id": self.source_id, "relation": self.relation, "target_id": self.target_id, "provenance": dict(self.provenance)}
 
 
 @dataclass
@@ -67,16 +59,10 @@ class HardwareKnowledgeGraph:
         return edge
 
     def related(self, node_id: str, relation: str | None = None) -> tuple[KnowledgeEdge, ...]:
-        return tuple(sorted(
-            (e for e in self.edges if e.source_id == node_id and (relation is None or e.relation == relation)),
-            key=lambda e: (e.relation, e.target_id),
-        ))
+        return tuple(sorted((e for e in self.edges if e.source_id == node_id and (relation is None or e.relation == relation)), key=lambda e: (e.relation, e.target_id)))
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "nodes": [self.nodes[k].to_dict() for k in sorted(self.nodes)],
-            "edges": [e.to_dict() for e in sorted(self.edges, key=lambda x: (x.source_id, x.relation, x.target_id))],
-        }
+        return {"nodes": [self.nodes[k].to_dict() for k in sorted(self.nodes)], "edges": [e.to_dict() for e in sorted(self.edges, key=lambda x: (x.source_id, x.relation, x.target_id))]}
 
 
 def graph_from_snapshot(snapshot: HardwareSnapshot) -> HardwareKnowledgeGraph:
