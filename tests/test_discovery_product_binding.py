@@ -1,13 +1,15 @@
 import unittest
-from dataclasses import replace
 
 from backend.platform.universal.catalog import ProductCatalog
-from backend.platform.universal.models import HardwareSnapshot, ProductIdentity
 from backend.platform.universal.discovery_binding import bind_discovery_to_product_catalog
+from backend.platform.universal.models import HardwareComponent, HardwareSnapshot, ProductIdentity
 
 
 def snapshot(**kwargs):
-    product = ProductIdentity(manufacturer="ASUS", product="X1504VA", board="X1504VA")
+    product = kwargs.pop(
+        "product",
+        ProductIdentity(manufacturer="ASUS", product="X1504VA", board="X1504VA"),
+    )
     return HardwareSnapshot(platform="windows", product=product, **kwargs)
 
 
@@ -27,8 +29,8 @@ class DiscoveryProductBindingTests(unittest.TestCase):
         value = bind_discovery_to_product_catalog(snapshot(), self.catalog())
         self.assertEqual(value.status, "MATCHED")
         self.assertEqual(value.matches[0].product_id, "asus-x1504va")
-        self.assertEqual(value.discovery_snapshot_sha, value.discovery_snapshot_sha)
-        self.assertEqual(value.hardware_identity_sha, value.hardware_identity_sha)
+        self.assertTrue(value.discovery_snapshot_sha)
+        self.assertTrue(value.hardware_identity_sha)
 
     def test_unmatched_is_explicit(self):
         value = bind_discovery_to_product_catalog(
@@ -50,14 +52,18 @@ class DiscoveryProductBindingTests(unittest.TestCase):
 
     def test_binding_changes_when_hardware_observation_changes(self):
         first = bind_discovery_to_product_catalog(snapshot(), self.catalog())
-        changed = bind_discovery_to_product_catalog(
-            snapshot(components=(
-                # A distinct observed component is sufficient to change the observation identity.
-                *snapshot().components,
-            )),
-            self.catalog(),
-        )
-        self.assertEqual(first.discovery_snapshot_sha, changed.discovery_snapshot_sha)
+        changed_snapshot = snapshot(components=(
+            HardwareComponent(
+                kind="network",
+                vendor="MediaTek",
+                model="MT7902",
+                device_id="14C3:7902",
+                bus="pci",
+            ),
+        ))
+        changed = bind_discovery_to_product_catalog(changed_snapshot, self.catalog())
+        self.assertNotEqual(first.discovery_snapshot_sha, changed.discovery_snapshot_sha)
+        self.assertNotEqual(first.hardware_identity_sha, changed.hardware_identity_sha)
 
 
 if __name__ == "__main__":
