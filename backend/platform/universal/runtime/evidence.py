@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ..contracts import EvidenceEnvelope, verify_envelope
+from ...contracts import EvidenceEnvelope, verify_envelope
 from .engine import RuntimeSession
 
 
@@ -21,9 +21,11 @@ def envelope_for_session(
     payload = session.to_dict()
     payload["case_id"] = case_id
     payload["hardware_identity_sha"] = hardware_identity_sha
-    result = "PASSED" if session.results and all(
-        item.returncode == 0 for item in session.results
-    ) else "FAILED"
+    result = (
+        "PASSED"
+        if session.results and all(item.returncode == 0 for item in session.results)
+        else "FAILED"
+    )
     return EvidenceEnvelope.create(
         source_sha or "UNPINNED_SOURCE",
         "runtime-session",
