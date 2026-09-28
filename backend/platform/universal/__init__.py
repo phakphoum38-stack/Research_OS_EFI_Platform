@@ -1,5 +1,8 @@
 """Universal hardware/product research contracts.
 
-This package is platform-neutral. It does not contain Windows, Linux, or macOS
-compatibility policy; those remain owned by their respective platform domains.
+The universal package provides identity, discovery, platform separation,
+capability, catalog, runtime orchestration, and evidence exchange contracts.
+
+Windows, Linux, and macOS compatibility policy remains outside this package
+and belongs to each platform-specific domain.
 """
