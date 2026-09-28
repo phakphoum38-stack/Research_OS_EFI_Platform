@@ -24,11 +24,12 @@ class RuntimeLearningTests(unittest.TestCase):
             )
             path = Path(tmp) / "runtime-evidence.json"
             write_runtime_evidence(evidence, str(path))
+            evidence_id = json.loads(path.read_text(encoding="utf-8"))["evidence_id"]
             updated, knowledge = learn_from_runtime_evidence(case, str(path))
 
         self.assertEqual(len(knowledge.for_case("case-1")), 1)
         self.assertEqual(updated.observations[0]["observation_type"], "graphics")
-        self.assertEqual(updated.provenance[0]["evidence_id"], json.loads(path.read_text(encoding="utf-8"))["evidence_id"])
+        self.assertEqual(updated.provenance[0]["evidence_id"], evidence_id)
 
     def test_case_mismatch_is_rejected(self):
         case = ResearchCase("case-1", "source-sha", "X1504VA", "test", (), (), ())
