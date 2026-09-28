@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 
-_DEVICE_RE = re.compile(r"^\\s*Device\\s*\\(\\s*([A-Za-z0-9_]+)\\s*\\)")
-_SCOPE_RE = re.compile(r"^\\s*Scope\\s*\\(\\s*([^)]*)\\s*\\)")
-_ADR_RE = re.compile(r"Name\\s*\\(\\s*_ADR\\s*,\\s*([^)]*)\\)")
+_DEVICE_RE = re.compile(r"^\s*Device\s*\(\s*([A-Za-z0-9_]+)\s*\)")
+_SCOPE_RE = re.compile(r"^\s*Scope\s*\(\s*([^)]*)\s*\)")
+_ADR_RE = re.compile(r"Name\s*\(\s*_ADR\s*,\s*([^)]*)\)")
 
 
 @dataclass
