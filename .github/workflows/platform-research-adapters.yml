@@ -1,0 +1,35 @@
+name: Platform Research Adapters
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  research-adapters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Adapter tests
+        run: python -m unittest tests/test_research_adapters.py -v
+      - name: Full Python suite
+        run: python -m unittest discover -s tests -v
+      - name: Adapter boundary smoke
+        run: |
+          python - <<'PY'
+          from backend.platform.research.adapters import ResearchDocument, ingest_document
+          doc = ResearchDocument("https://example.invalid/fixture", b"fixture")
+          result = ingest_document(doc, source_id="fixture-1", adapter_name="ci")
+          assert result.source.source_sha == doc.content_sha
+          assert not result.observations
+          print(result.to_dict())
+          PY
+      - name: Safety boundary
+        shell: bash
+        run: |
+          if grep -RniE 'format-volume|Clear-Disk|Set-Partition|bcdedit[[:space:]]+/delete|Disable-SecureBoot|Set-SecureBootUEFI|diskpart.*clean|efibootmgr[[:space:]].*(create|delete)' backend/platform/research 2>/dev/null; then
+            echo "Unsafe mutation command detected in research adapters"; exit 1
+          fi
