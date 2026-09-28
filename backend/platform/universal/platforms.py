@@ -21,6 +21,7 @@ class PlatformDescriptor:
     display_name: str
     runtime_module: str
     discovery_module: str
+    implementation_status: str
     owns_compatibility_domain: bool = True
 
 
@@ -30,42 +31,49 @@ PLATFORM_REGISTRY: dict[PlatformId, PlatformDescriptor] = {
         "Windows",
         "backend.platform.universal.runtime.windows",
         "backend.platform.universal.discovery.windows",
+        "implemented",
     ),
     PlatformId.LINUX: PlatformDescriptor(
         PlatformId.LINUX,
         "Linux",
         "backend.platform.universal.runtime.linux",
         "backend.platform.universal.discovery.linux",
+        "implemented",
     ),
     PlatformId.MACOS: PlatformDescriptor(
         PlatformId.MACOS,
         "macOS",
         "backend.platform.universal.runtime.macos",
         "backend.platform.universal.discovery.macos",
+        "implemented",
     ),
     PlatformId.FREEBSD: PlatformDescriptor(
         PlatformId.FREEBSD,
         "FreeBSD",
         "external.runtime.freebsd",
         "external.discovery.freebsd",
+        "registry-only",
     ),
     PlatformId.OPENBSD: PlatformDescriptor(
         PlatformId.OPENBSD,
         "OpenBSD",
         "external.runtime.openbsd",
         "external.discovery.openbsd",
+        "registry-only",
     ),
     PlatformId.NETBSD: PlatformDescriptor(
         PlatformId.NETBSD,
         "NetBSD",
         "external.runtime.netbsd",
         "external.discovery.netbsd",
+        "registry-only",
     ),
     PlatformId.OTHER: PlatformDescriptor(
         PlatformId.OTHER,
         "Other",
         "external.runtime.other",
         "external.discovery.other",
+        "registry-only",
     ),
 }
 
