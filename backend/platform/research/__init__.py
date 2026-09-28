@@ -1,7 +1,17 @@
-"""Research-gap and evidence-discovery primitives for Research OS EFI Platform."""
+"""Research foundations for Research OS EFI Platform."""
 
-from .gaps import ResearchGap, ResearchGapRegistry
-from .requirements import EvidenceRequirement
+from .cases import ResearchCase, ResearchCaseEngine, ResearchCaseState
+from .models import EvidenceRequirement, ResearchGap
+from .observations import ResearchObservation
 from .sources import ResearchSource, ResearchSourceRegistry
 
-__all__ = ["ResearchGap", "ResearchGapRegistry", "EvidenceRequirement", "ResearchSource", "ResearchSourceRegistry"]
+__all__ = [
+    "ResearchCase",
+    "ResearchCaseEngine",
+    "ResearchCaseState",
+    "EvidenceRequirement",
+    "ResearchGap",
+    "ResearchObservation",
+    "ResearchSource",
+    "ResearchSourceRegistry",
+]
