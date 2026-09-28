@@ -1,0 +1,32 @@
+name: Platform Compatibility Learning
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  compatibility-learning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Verify gated promotion
+        run: |
+          rm -rf .ci-compatibility-learning
+          mkdir -p .ci-compatibility-learning
+          python -m backend.platform.cli runtime-evidence             .ci-compatibility-learning/runtime-evidence.json             --case-id x1504va-compatibility             --source-sha 0000000000000000000000000000000000000000             --candidate-sha candidate-fixture             --result PASSED             --platform macOS             --observation "Intel UHD 8086:A7A9 acceleration verified"
+          python -m backend.platform.cli compatibility-from-runtime             .ci-compatibility-learning/runtime-evidence.json > .ci-compatibility-learning/decision.json
+          python - <<'PY'
+          import json
+          value = json.load(open(".ci-compatibility-learning/decision.json", encoding="utf-8"))
+          assert len(value) == 1
+          assert value[0]["component"] == "gpu"
+          assert value[0]["level"] == "MACOS_PROVEN"
+          assert value[0]["evidence_id"]
+          print(json.dumps(value, indent=2))
+          PY
