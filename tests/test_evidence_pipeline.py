@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from backend.platform.pipeline import build_evidence_packet, fingerprint_tree
+from backend.platform.pipeline import build_evidence_packet, fingerprint_tree, write_evidence_packet
 
 
 class EvidencePipelineTests(unittest.TestCase):
