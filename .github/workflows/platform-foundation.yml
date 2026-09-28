@@ -1,0 +1,41 @@
+name: Platform Foundation
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  python-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - name: Python platform tests
+        run: python -m unittest discover -s tests -v
+      - name: Bridge smoke
+        run: python -m backend.platform.cli bridge
+      - name: EFI knowledge smoke
+        run: python -m backend.platform.cli efi-knowledge
+      - name: Research plan smoke
+        run: python -m backend.platform.cli plan hardware/x1504va.json --source-sha 0000000000000000000000000000000000000000
+  flutter-control-center:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: apps/x1504va_control_center}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: {channel: stable}
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+  safety-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify safety boundaries
+        shell: bash
+        run: |
+          if grep -RniE 'format-volume|Clear-Disk|Set-Partition|bcdedit /delete|Disable-SecureBoot|Set-SecureBootUEFI|diskpart.*clean' backend apps tools 2>/dev/null; then
+            echo "Unsafe mutation command detected"; exit 1
+          fi
