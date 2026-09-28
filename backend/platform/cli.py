@@ -5,6 +5,7 @@ from .acpi_graph import topology_for
 from .candidate import generate_candidate
 from .collector import write_snapshot
 from .multihardware import discover_profiles
+from .preflight import build_preflight, write_preflight
 from .runtime import write_runtime_event
 from .validator import validate_candidate
 
@@ -14,6 +15,7 @@ def main():
     x=s.add_parser("acpi"); x.add_argument("dsl"); x.add_argument("--name",action="append",default=[])
     x=s.add_parser("candidate"); x.add_argument("profile"); x.add_argument("output")
     x=s.add_parser("validate"); x.add_argument("efi")
+    x=s.add_parser("preflight"); x.add_argument("profile"); x.add_argument("efi"); x.add_argument("experiment"); x.add_argument("output")
     x=s.add_parser("runtime"); x.add_argument("event"); x.add_argument("output"); x.add_argument("--artifact",action="append",default=[])
     x=s.add_parser("profiles"); x.add_argument("--directory",default="hardware")
     a=p.parse_args()
@@ -24,6 +26,14 @@ def main():
     elif a.command=="candidate":
         print(json.dumps(generate_candidate(json.loads(Path(a.profile).read_text(encoding="utf-8")),a.output),indent=2))
     elif a.command=="validate": print(json.dumps(validate_candidate(a.efi),indent=2))
+    elif a.command=="preflight":
+        result=build_preflight(
+            json.loads(Path(a.profile).read_text(encoding="utf-8")),
+            a.efi,
+            json.loads(Path(a.experiment).read_text(encoding="utf-8")),
+        )
+        write_preflight(result,a.output)
+        print(json.dumps(result,indent=2))
     elif a.command=="runtime": write_runtime_event(a.event,a.output,a.artifact)
     elif a.command=="profiles": print(json.dumps(discover_profiles(a.directory),indent=2))
     return 0
