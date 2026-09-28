@@ -18,6 +18,7 @@ from .orchestrator import build_plan
 from .opencore import validate_opencore
 from .pipeline import build_evidence_packet, write_evidence_packet
 from .runtime_evidence import RuntimeObservation, create_runtime_evidence, write_runtime_evidence
+from .runtime_learning import learn_from_runtime_evidence
 
 
 def main():
@@ -68,15 +69,16 @@ def main():
     x.add_argument("--source-sha", required=True)
     x.add_argument("--hypothesis", required=True)
     x.add_argument("--case-id", default="x1504va-research")
+    x = s.add_parser("learn-runtime")
+    x.add_argument("case")
+    x.add_argument("evidence")
 
     a = p.parse_args()
 
     if a.command == "collect":
         write_snapshot(a.output)
     elif a.command == "acpi":
-        lines = Path(a.dsl).read_text(
-            encoding="utf-8", errors="replace"
-        ).splitlines()
+        lines = Path(a.dsl).read_text(encoding="utf-8", errors="replace").splitlines()
         print(json.dumps(
             topology_for(lines, set(a.name or ["GFX0", "VMD0", "NVD1", "ETPD"])),
             indent=2,
@@ -96,7 +98,10 @@ def main():
         write_runtime_event(a.event, a.output, a.artifact)
     elif a.command == "runtime-evidence":
         observations = [RuntimeObservation("other", value) for value in a.observation]
-        evidence = create_runtime_evidence(a.case_id, a.source_sha, a.candidate_sha, a.result, a.platform, observations, a.artifact)
+        evidence = create_runtime_evidence(
+            a.case_id, a.source_sha, a.candidate_sha, a.result, a.platform,
+            observations, a.artifact
+        )
         write_runtime_evidence(evidence, a.output)
         print(json.dumps(evidence.to_dict(), indent=2, ensure_ascii=False))
     elif a.command == "profiles":
@@ -126,6 +131,19 @@ def main():
             capability_report()["capabilities"],
         )
         print(json.dumps(build_plan(case).to_dict(), indent=2))
+    elif a.command == "learn-runtime":
+        case_value = json.loads(Path(a.case).read_text(encoding="utf-8"))
+        case = ResearchCase(
+            case_value["case_id"],
+            case_value["source_sha"],
+            case_value["profile"],
+            case_value["hypothesis"],
+            tuple(case_value.get("facts", [])),
+            tuple(case_value.get("observations", [])),
+            tuple(case_value.get("provenance", [])),
+        )
+        updated, knowledge = learn_from_runtime_evidence(case, a.evidence)
+        print(json.dumps({"case": updated.to_dict(), "knowledge": knowledge.to_dict()}, indent=2))
 
     return 0
 
