@@ -1,0 +1,31 @@
+name: Platform M3-M11
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  python-platform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: CLI smoke
+        run: python -m backend.platform.cli profiles --directory hardware
+
+  safety-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify safety boundaries
+        shell: bash
+        run: |
+          if grep -RniE 'format-volume|Clear-Disk|Set-Partition|bcdedit /delete|Disable-SecureBoot' backend apps tools 2>/dev/null; then
+            echo "Unsafe mutation command detected"
+            exit 1
+          fi
