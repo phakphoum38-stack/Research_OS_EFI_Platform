@@ -14,10 +14,10 @@ from .orchestrator import build_plan
 
 
 def fingerprint_tree(root: str) -> str:
-    """Return a deterministic digest of candidate file paths and bytes."""
+    """Return a deterministic digest of candidate files, excluding the packet."""
     base = Path(root)
     digest = hashlib.sha256()
-    for path in sorted(p for p in base.rglob("*") if p.is_file()):
+    for path in sorted(p for p in base.rglob("*") if p.is_file() and p.name != "evidence-packet.json"):
         rel = path.relative_to(base).as_posix().encode()
         digest.update(rel)
         digest.update(b"\0")
