@@ -1,36 +1,64 @@
-# backend/builder/efi_builder.py
+from __future__ import annotations
 
-import os
 import json
-from builder.kext_resolver import resolve_kexts
-from builder.config_gen import generate_config
+import os
+import plistlib
+from typing import Any, Mapping
 
-def create_structure():
+from .compatibility import evaluate_hardware, result_to_dict
+from .config_gen import generate_config
+from .kext_resolver import resolve_kexts
 
+
+def create_structure(root: str = "EFI") -> None:
     paths = [
-        "EFI/OC",
-        "EFI/OC/ACPI",
-        "EFI/OC/Kexts",
-        "EFI/OC/Drivers"
+        os.path.join(root, "OC"),
+        os.path.join(root, "OC", "ACPI"),
+        os.path.join(root, "OC", "Kexts"),
+        os.path.join(root, "OC", "Drivers"),
+        os.path.join(root, "OC", "Resources"),
+        os.path.join(root, "OC", "Tools"),
     ]
+    for path in paths:
+        os.makedirs(path, exist_ok=True)
 
-    for p in paths:
-        os.makedirs(p, exist_ok=True)
 
-def build_efi(config):
+def build_efi(
+    profile: Mapping[str, Any],
+    root: str = "EFI",
+    strict: bool = True,
+) -> dict[str, Any]:
+    """Build only when compatibility evidence clears the safety gate.
 
-    print("🧠 Resolving kexts...")
-    kexts = resolve_kexts(config)
+    A blocked machine still gets an inspectable compatibility report, but no
+    bootable-looking config is emitted. This prevents unsupported hardware
+    guesses from becoming EFI artifacts.
+    """
+    result = evaluate_hardware(profile)
+    create_structure(root)
 
-    print("⚙️ Generating config.plist...")
-    plist = generate_config(config, kexts)
+    report = result_to_dict(result)
+    report_path = os.path.join(root, "OC", "compatibility-report.json")
+    with open(report_path, "w", encoding="utf-8") as handle:
+        json.dump(report, handle, indent=2)
 
-    create_structure()
+    if result.status == "BLOCKED" and strict:
+        return {
+            "status": "EFI_BLOCKED",
+            "compatibility": report,
+            "report": report_path,
+        }
 
-    with open("EFI/OC/config.plist", "w") as f:
-        f.write(str(plist))
+    kexts = resolve_kexts(profile)
+    config = generate_config(profile, kexts)
+
+    config_path = os.path.join(root, "OC", "config.plist")
+    with open(config_path, "wb") as handle:
+        plistlib.dump(config, handle, fmt=plistlib.FMT_XML, sort_keys=False)
 
     return {
         "status": "EFI_CREATED",
-        "kexts": kexts
+        "kexts": kexts,
+        "compatibility": report,
+        "config": config_path,
     }

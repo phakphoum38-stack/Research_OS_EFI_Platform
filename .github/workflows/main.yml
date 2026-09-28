@@ -1,62 +1,45 @@
-name: AI EFI Full Pipeline
+name: AI EFI Compatibility Gate
 
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
-  ai-pipeline:
-
+  compatibility-gate:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
+      - name: Run compatibility tests
+        run: python -m unittest discover -s tests -v
 
-    - name: Install dependencies
-      run: pip install -r requirements.txt
+      - name: Evaluate X1504VA and build safe candidate
+        run: |
+          PYTHONPATH=. python - <<'PY'
+          import json
+          from backend.builder.efi_builder import build_efi
 
-    # ✅ FIX PATH
-    - name: Set PYTHONPATH
-      run: echo "PYTHONPATH=." >> $GITHUB_ENV
+          with open("hardware/x1504va.json", encoding="utf-8") as handle:
+              profile = json.load(handle)
 
-    # 📁 FIX FOLDERS
-    - name: Create folders
-      run: |
-        mkdir -p models
-        mkdir -p EFI/OC
+          result = build_efi(profile, strict=True)
+          print(json.dumps(result, indent=2))
 
-    # 🧠 TRAIN AI
-    - name: Train AI Model
-      run: PYTHONPATH=. python -m backend.core.trainer
+          if result["status"] != "EFI_BLOCKED":
+              raise SystemExit("Expected the current X1504VA profile to remain blocked until GPU/VMD evidence is proven")
+          PY
 
-    # ⚙️ BUILD EFI
-    - name: Build EFI
-      run: |
-        PYTHONPATH=. python -c "from backend.builder.efi_builder import build_efi; build_efi({'cpu':'Intel','gpu':'Intel','acpi_score':70,'gpu_score':60,'usb_score':80})"
-
-    # 🖥️ VM TEST
-    - name: Run VM Test
-      run: |
-        PYTHONPATH=. python -c "from vm.worker import run_qemu_boot; print(run_qemu_boot({'test':True}))"
-
-    # 📦 Upload Model
-    - name: Upload Model
-      uses: actions/upload-artifact@v4
-      with:
-        name: model
-        path: models/latest.pth
-
-    # 📦 Upload EFI
-    - name: Upload EFI
-      uses: actions/upload-artifact@v4
-      with:
-        name: EFI
-        path: EFI/
-        
+      - name: Upload compatibility evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: x1504va-compatibility-evidence
+          path: EFI/OC/compatibility-report.json

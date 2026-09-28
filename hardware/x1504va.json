@@ -1,0 +1,44 @@
+{
+  "machine": "ASUS Vivobook X1504VA",
+  "cpu": {
+    "model": "Intel Core i3-1315U",
+    "status": "proven"
+  },
+  "gpu": {
+    "pci_id": "8086:A7A9",
+    "name": "Intel UHD Graphics",
+    "acceleration_status": "not_proven"
+  },
+  "storage": {
+    "nvme": "KIOXIA KBG60ZNS512G",
+    "vmd": {
+      "ids": [
+        "8086:09AB",
+        "8086:A77F"
+      ],
+      "status": "research"
+    }
+  },
+  "audio": {
+    "codec": "10EC:0256",
+    "family": "ALC256",
+    "applealc_status": "proven",
+    "layout_status": "not_proven"
+  },
+  "wifi": {
+    "pci_id": "14C3:7902",
+    "name": "MediaTek MT7902",
+    "macos_status": "not_proven"
+  },
+  "bluetooth": {
+    "usb_id": "13D3:3579",
+    "macos_status": "not_proven"
+  },
+  "touchpad": {
+    "ids": [
+      "ASUF1300",
+      "I2C HID"
+    ],
+    "acpi_status": "not_proven"
+  }
+}

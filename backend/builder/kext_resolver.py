@@ -1,16 +1,22 @@
-# backend/builder/kext_resolver.py
+from __future__ import annotations
 
-def resolve_kexts(config):
+from typing import Any, Mapping
 
-    cpu = config.get("cpu", "")
-    gpu = config.get("gpu", "")
 
+def resolve_kexts(profile: Mapping[str, Any]) -> list[str]:
+    """Return only evidence-backed kext candidates."""
     kexts = ["Lilu.kext", "VirtualSMC.kext"]
 
-    if "Intel" in gpu:
+    gpu = profile.get("gpu", {})
+    if gpu.get("acceleration_status") == "proven":
         kexts.append("WhateverGreen.kext")
 
-    if "AMD" in gpu:
-        kexts.append("NootedRed.kext")
+    audio = profile.get("audio", {})
+    if audio.get("applealc_status") == "proven":
+        kexts.append("AppleALC.kext")
+
+    wifi = profile.get("wifi", {})
+    if wifi.get("macos_status") == "proven":
+        kexts.append("WiFi.kext")
 
     return kexts
